@@ -1,3 +1,3 @@
-import {_Disassembler} from './lib/src/disam';
+import {_Disassembler} from './src/disam';
 
 export const Disassembler = new _Disassembler();

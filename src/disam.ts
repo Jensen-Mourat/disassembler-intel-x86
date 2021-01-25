@@ -12,7 +12,7 @@ interface Code {
 
 type length = 'b' | 'w' | 'd';
 
-export class Disassembler {
+export class _Disassembler {
     private _prefixMap = new Map<string, prefixModes>().set('66', 'registerMode').set('67', 'addressMode');
     private modRmSet = new Set(['80', '81', '83']);
     private _opCodeMap = new Map<string, { instruction: string, length?: length }>();
@@ -50,10 +50,10 @@ export class Disassembler {
         const instruction = op?.instruction;
         const operand1 = possibleRegisters.length > 0 ? possibleRegisters[1] : undefined;
         const operand2 = this.getValueFromLength(iterator, prefix ? 'w' : op?.length);
-        console.log(instruction + ' ' + operand1 + ' ' + operand2);
+        return instruction + ' ' + operand1 + ' ' + operand2;
     }
 
-    private getValueFromLength(it: IterableIterator<string>, length?: length) {
+    private getValueFromLength(it: IterableIterator<string>, length?: string) {
         if (length) {
             switch (length) {
                 case 'b':
