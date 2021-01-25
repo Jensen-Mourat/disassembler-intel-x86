@@ -19,8 +19,14 @@
     "type": "git",
     "url": "git+https://github.com/Jensen-Mourat/disassembler-intel-x86.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "disassembler",
+    "Intel",
+    "opcodes",
+    "disassembly",
+    "x86"
+  ],
+  "author": "Jensen Mourat",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Jensen-Mourat/disassembler-intel-x86/issues"
