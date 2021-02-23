@@ -8,6 +8,7 @@ export interface Operation {
     op2?: operandTypes;
     has16Bit?: boolean;
     isOneByte?: boolean;
+    isSignExtended?: boolean;
 }
 
 type operation = 'add';
@@ -32,7 +33,6 @@ const getModRMset = (): Set<string> => {
 };
 
 export const MOD_RM_SET = getModRMset();
-
 
 
 export interface OpCode {

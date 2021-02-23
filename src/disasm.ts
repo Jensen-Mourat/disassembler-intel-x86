@@ -4,6 +4,8 @@ import {isNotANumber} from './helper/isNotANumber';
 import {ALL_REGISTERS} from './constants/sets/register.set';
 import '../utils/string.extensions';
 import {rotate} from './helper/rotate';
+import {removeTrailingZero} from './helper/removeTrailingZero';
+import {convertToTwosComp} from './helper/twosComplement';
 
 interface OpCode {
     instruction: string;
@@ -17,9 +19,15 @@ interface Code {
 
 interface OptionsInterface {
     is16Bit?: boolean;
-    isAddress?: boolean
+    isAddress?: boolean;
+    isSignExtended?: boolean;
 }
 
+interface IOperand {
+    operand1?: operand,
+    operand2?: operand,
+    pointer?: pointerType
+}
 
 type length = 'b' | 'w' | 'd';
 
@@ -34,7 +42,7 @@ export class _Disassembler {
     }
 
     generateInstructions(code: string): Instruction[] {
-        code = code.toUpperCase();
+        code = code.toUpperCase().trim();
         const result: Instruction[] = [];
         const iterator = this.byteIterator(code);
         const next = () => iterator.next().value.byte;
@@ -92,11 +100,12 @@ export class _Disassembler {
         if (!operation) {
             throw Error('invalid code');
         }
-        const [op1, op2, pointer] = this.processOperand(operation.op1!, operation.op2!, next, tableResult, {
+        const operands = this.processOperand(operation.op1!, operation.op2!, next, tableResult, {
             is16Bit,
-            isAddress
+            isAddress,
+            isSignExtended: operation.isSignExtended
         });
-        return {instruction: operation.operation, operand1: op1, operand2: op2, pointer};
+        return {instruction: operation.operation, ...operands};
     }
 
     private fetchPrefix(b: string) {
@@ -117,72 +126,92 @@ export class _Disassembler {
         return [isRegister(op1), isRegister(op2)];
     }
 
-    private i
-
-    private processOperand(op1: operandTypes, op2: operandTypes, next: Function, tableResult?: [string[], string[]], options?: OptionsInterface): [string | undefined, string | undefined, string | undefined] {
+    private processOperand(op1: operandTypes, op2: operandTypes, next: Function, tableResult?: [string[], string[]], options?: OptionsInterface): IOperand {
         let operand1, operand2;
         //check register
         [operand1, operand2] = this.checkRegister(op1, op2, options);
         if (operand1 || operand2) {
-
-            return [operand1, operand2, undefined];
-        }
-        if (operand1) { // e.g 04
-            if (op2 === 'imm8') {
-                operand2 = next();
-                return [operand1, operand2, undefined];
-            }
-            if (op2 === 'imm32') {
-                operand2 = next() + next();
-                if (!options?.is16Bit) { // if 32 bit
-                    operand2 = operand2 + next() + next();
+            if (operand1) { // e.g 04
+                if (op2 === 'imm8') {
+                    operand2 = next();
+                    return {operand1: {register: operand1}, operand2: {value: operand2}};
                 }
-                return [operand1, rotate(operand2), undefined];
-            }
-        }
-        if (operand2) { // e.g 04
-            if (op1 === 'imm8') {
-                operand1 = next();
-                return [operand1, operand2, undefined];
-            }
-            if (op1 === 'imm32') {
-                operand1 = next() + next();
-                if (!options?.is16Bit) { // if 32 bit
-                    operand1 = operand1 + next() + next();
+                if (op2 === 'imm32') {
+                    operand2 = next() + next();
+                    if (!options?.is16Bit) { // if 32 bit
+                        operand2 = operand2 + next() + next();
+                    }
+                    operand2 = removeTrailingZero(rotate(operand2));
+                    return {operand1: {register: operand1}, operand2: {value: operand2}};
                 }
-                return [operand1, rotate(operand1), undefined];
             }
+            if (operand2) { // e.g 04
+                if (op1 === 'imm8') {
+                    operand1 = next();
+                    return {operand1: {register: operand1}, operand2: {value: operand2}};
+                }
+                if (op1 === 'imm32') {
+                    operand1 = next() + next();
+                    if (!options?.is16Bit) { // if 32 bit
+                        operand1 = operand1 + next() + next();
+                    }
+                    return {operand1: {register: operand1}, operand2: {value: rotate(operand1)}};
+                }
+            }
+            return {operand1: {register: operand1}, operand2: {register: operand2}};
         }
         if (op1 === 'm8') {
             operand1 = tableResult[0][0];
             if (op2.includes('imm')) {
-                switch (op2) {
-                    case 'imm8':
-                        return [operand1, next(), undefined];
-                    case 'imm32':
-                        return [operand1, rotate(next() + next() + (!options?.is16Bit ? next() + next() : '')), undefined];
-                }
+                return this.processImm(operand1, op2, next, options)!;
             }
             if (op2 === 'r8') {
                 operand2 = tableResult[1][0];
-                return [operand1, operand2, undefined];
+                return {operand1: {register: operand1}, operand2: {register: operand2}};
                 // check displacement
             }
         }
-        //register and register
-        if (op1.includes('r')) {
-            switch (op1) {
-                case 'r8':
+        if (op1 === 'm32') {
+            operand1 = tableResult[0][options?.is16Bit ? 1 : 2];
+            if (op2 === 'r32') {
+                operand2 = tableResult[1][options?.is16Bit ? 1 : 2];
+                return {operand1: {register: operand1}, operand2: {register: operand2}};
             }
-            if (op2.includes('r')) {
-
-            }
-            if (op2.includes('m')) {
-
-            }
-
             if (op2.includes('imm')) {
-
+                return this.processImm(operand1, op2, next, options)!;
+            }
+        }
+        if (op1.includes('r')) {
+            //register and displacement
+            if (op1 === 'r8') {
+                operand1 = tableResult[1][0];
+                if (op2 === 'm8') {
+                    const result = tableResult[0][0];
+                    if (result.includes('disp32')) {
+                        const operand2 = removeTrailingZero(rotate(next() + next() + next() + next()));
+                        if (result === 'disp32') {
+                            return {operand1: {register: operand1}, operand2: {displacement: operand2}, pointer: 'b'};
+                        }
+                        // eg [eax + disp32]
+                        const register = result.split('+')[0].removeBrackets('[');
+                        return {
+                            operand1: {register: operand1},
+                            operand2: {register, displacement: operand2},
+                            pointer: 'b'
+                        };
+                    }
+                    if (result === '[sib]') {
+                        const n = next();
+                        const sib = Table.getReverseValueFromTable(n, '32sib');
+                        const [register, constant] = sib[0][0].removeBrackets('[').split('*');
+                        const displacement = removeTrailingZero(rotate(next() + next() + next() + next()));
+                        return {
+                            operand1: {register: operand1},
+                            operand2: {register, constant: constant ? constant : '1', displacement},
+                            pointer: 'b'
+                        };
+                    }
+                }
             }
         }
         if (op1.includes('m')) {
@@ -214,7 +243,28 @@ export class _Disassembler {
 
             }
         }
-        return [undefined, undefined, undefined];
+        return {operand1: {register: operand1}};
+    }
+
+    private processImm(op1: string, op2: string, next: Function, options?: OptionsInterface): IOperand | undefined {
+        switch (op2) {
+            case 'imm8':
+                let nextByte = next();
+                if (options?.isSignExtended && this.isNegative(nextByte)) {
+                    nextByte = 'FF' + nextByte;
+                    if (!options.is16Bit) {
+                        nextByte = 'FFFF' + nextByte;
+                    }
+                }
+                return {operand1: {register: op1}, operand2: {value: nextByte}};
+            case 'imm32':
+                const operand2 = removeTrailingZero(rotate(next() + next() + (!options?.is16Bit ? next() + next() : '')));
+                return {operand1: {register: op1}, operand2: {value: operand2}};
+        }
+    }
+
+    private isNegative(s: string) {
+        return parseInt(s, 16) > 127;
     }
 }
 
@@ -293,11 +343,19 @@ export class _Disassembler {
 // }
 
 type prefixModes = 'registerMode' | 'addressMode';
+export type pointerType = 'b' | 'd' | 'w';
+
+interface operand {
+    value?: string;
+    register?: string;
+    displacement?: string;
+    constant?: string;
+}
 
 export interface Instruction {
     instruction: string;
-    operand1?: string;
-    operand2?: string;
+    operand1?: operand;
+    operand2?: operand;
     position?: number;
-    pointer?: 'b' | 'd' | 'w'
+    pointer?: pointerType
 }
