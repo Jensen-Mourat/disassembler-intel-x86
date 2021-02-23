@@ -44,12 +44,12 @@ export class _Disassembler {
                 return result;
             }
             const position = currentByte.value.position;
-            const instruction = this.generateInstruction(currentByte.value.byte, next);
+            const instruction = this.getInstruction(currentByte.value.byte, next);
             result.push({...instruction, position: position});
         }
     }
 
-    private generateInstruction(currentByte: string, next: () => string): Instruction {
+    private getInstruction(currentByte: string, next: () => string): Instruction {
         let is16Bit = false;
         let isAddress = false;
         const prefix1 = this.fetchPrefix(currentByte);

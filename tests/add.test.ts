@@ -50,23 +50,26 @@ class addTest {
     }
 
     @test 'r8 and disp'() {
-        Disassembler.generateInstructions('0411').should.eql([{
+        Disassembler.generateInstructions('020511000000').should.eql([{
             instruction: 'add',
             operand1: 'al',
             operand2: '11',
             position: 0,
-        }]);
-        Disassembler.generateInstructions('020511000000').should.eql([{
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('0205FF000000').should.eql([{
             instruction: 'add',
             operand1: 'al',
             operand2: 'FF',
-            position: 0
-        }]);
-        Disassembler.generateInstructions('80C311').should.eql([{
+            position: 0,
+            pointer: 'b'
+        }as Instruction]);
+        Disassembler.generateInstructions('021D11000000 ').should.eql([{
             instruction: 'add',
             operand1: 'bl',
             operand2: '11',
+            pointer: 'b',
             position: 0
-        }]);
+        }as Instruction]);
     }
 }
