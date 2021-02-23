@@ -1,9 +1,7 @@
 import {suite, test} from '@testdeck/mocha';
 import * as _chai from 'chai';
 import {Disassembler} from '../index';
-import {mergeSets} from '../src/helper/mergeSets';
 import {Instruction} from '../src/disasm';
-import {register} from 'ts-node';
 
 _chai.should();
 
@@ -96,9 +94,16 @@ class addTest {
             pointer: 'b',
             position: 0
         } as Instruction]);
+        Disassembler.generateInstructions('6702871111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'bx', displacement: '1111'},
+            pointer: 'b',
+            position: 0
+        } as Instruction]);
     }
 
-    @test 'r8 and r8*const'() {
+    @test 'r8 and r32*const'() {
         Disassembler.generateInstructions('02040500000000').should.eql([{
             instruction: 'add',
             operand1: {register: 'al'},
@@ -155,6 +160,70 @@ class addTest {
             instruction: 'add',
             operand1: {register: 'al'},
             operand2: {register: 'eax', constant: '8', displacement: 'FFFF'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
+    @test 'r8 , r32+r32'() {
+        Disassembler.generateInstructions('020400').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', register2: 'eax', constant: '1'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
+    @test 'r8, r16+r16'() {
+        Disassembler.generateInstructions('670200').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'bx', register2: 'si'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
+    @test 'r8, r32+r32+disp'() {
+        Disassembler.generateInstructions('02840011110000 ').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', register2: 'eax', displacement: '1111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
+    @test 'r8, r16+r16+disp'() {
+        Disassembler.generateInstructions('6702801111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'bx', register2: 'si', displacement: '1111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
+    @test 'r8, r32+r32*const+disp'() {
+        Disassembler.generateInstructions('02844011110000 ').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', constant: '2', register2: 'eax', displacement: '1111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('02848011111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', constant: '4', register2: 'eax', displacement: '11111111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('0284C011111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', constant: '8', register2: 'eax', displacement: '11111111'},
             position: 0,
             pointer: 'b'
         } as Instruction]);
@@ -288,4 +357,313 @@ class addTest {
             position: 0
         }]);
     }
+
+    @test 'r16 and disp'() {
+        Disassembler.generateInstructions('66030511000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {displacement: '11'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('660305ff000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {displacement: 'FF'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('66031d11000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'bx'},
+            operand2: {displacement: '11'},
+            pointer: 'b',
+            position: 0
+        } as Instruction]);
+        Disassembler.generateInstructions('66030511110000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {displacement: '1111'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+        Disassembler.generateInstructions('660305ffff0000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {displacement: 'FFFF'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+        Disassembler.generateInstructions('66031d11110000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'bx'},
+            operand2: {displacement: '1111'},
+            pointer: 'w',
+            position: 0
+        } as Instruction]);
+    }
+
+    @test 'r32 and disp'() {
+        Disassembler.generateInstructions('030511111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {displacement: '11111111'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('0305ffffffff').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {displacement: 'FFFFFFFF'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('031d11111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ebx'},
+            operand2: {displacement: '11111111'},
+            pointer: 'd',
+            position: 0
+        } as Instruction]);
+    }
+
+    @test 'r16 and r+disp'() {
+        Disassembler.generateInstructions('024011').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', displacement: '11'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('0280ff000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'al'},
+            operand2: {register: 'eax', displacement: 'FF'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('66038011110000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', displacement: '1111'},
+            pointer: 'w',
+            position: 0
+        } as Instruction]);
+        Disassembler.generateInstructions('660380ffff0000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', displacement: 'FFFF'},
+            pointer: 'w',
+            position: 0
+        } as Instruction]);
+        Disassembler.generateInstructions('676603871111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'bx', displacement: '1111'},
+            pointer: 'w',
+            position: 0
+        } as Instruction]);
+    }
+
+    @test 'r32 and r+disp'() {
+        Disassembler.generateInstructions('038011111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', displacement: '11111111'},
+            pointer: 'd',
+            position: 0
+        }]);
+        Disassembler.generateInstructions('6703871111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'bx', displacement: '1111'},
+            pointer: 'd',
+            position: 0
+        } as Instruction]);
+    }
+
+    @test 'r16 and r32*const'() {
+        Disassembler.generateInstructions('6603040500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '1', displacement: '0'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+        Disassembler.generateInstructions('6603044500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '2', displacement: '0'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+        Disassembler.generateInstructions('6603048500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '4', displacement: '0'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+        Disassembler.generateInstructions('660304c500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '8', displacement: '0'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+    }
+
+    @test 'r32 and r32*const'() {
+        Disassembler.generateInstructions('03040500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '1', displacement: '0'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('03044500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '2', displacement: '0'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('03048500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '4', displacement: '0'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('0304C500000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '8', displacement: '0'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+    }
+
+    @test 'r32 and r32*const+displacement'() {
+        Disassembler.generateInstructions('03040511000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '1', displacement: '11'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('030445ff000000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '2', displacement: 'FF'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('03048511110000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '4', displacement: '1111'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('0304c5ffff0000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '8', displacement: 'FFFF'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+        Disassembler.generateInstructions('03040511111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', constant: '1', displacement: '11111111'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+    }
+
+    @test 'r16 , r32+r32'() {
+        Disassembler.generateInstructions('66030400').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', register2: 'eax', constant: '1'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+    }
+
+    @test 'r16 , r16+r16'() {
+        Disassembler.generateInstructions('67660300').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'bx', register2: 'si'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+    }
+
+    @test 'r32 , r16+r16'() {
+        Disassembler.generateInstructions('670300').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'bx', register2: 'si'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+    }
+
+    @test 'r32 , r32+r32'() {
+        Disassembler.generateInstructions('030400').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'eax'},
+            operand2: {register: 'eax', register2: 'eax', constant: '1'},
+            position: 0,
+            pointer: 'd'
+        } as Instruction]);
+    }
+
+    @test 'r16, r32+r32+disp'() {
+        Disassembler.generateInstructions('6603840011110000').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', register2: 'eax', displacement: '1111'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+    }
+
+    @test 'r16, r16+r16+disp'() {
+        Disassembler.generateInstructions('676603801111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'bx', register2: 'si', displacement: '1111'},
+            position: 0,
+            pointer: 'w'
+        } as Instruction]);
+    }
+
+    @test 'r16, r32+r32*const+disp'() {
+        Disassembler.generateInstructions('02844011110000 ').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '2', register2: 'eax', displacement: '1111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('02848011111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '4', register2: 'eax', displacement: '11111111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+        Disassembler.generateInstructions('0284C011111111').should.eql([{
+            instruction: 'add',
+            operand1: {register: 'ax'},
+            operand2: {register: 'eax', constant: '8', register2: 'eax', displacement: '11111111'},
+            position: 0,
+            pointer: 'b'
+        } as Instruction]);
+    }
+
 }
