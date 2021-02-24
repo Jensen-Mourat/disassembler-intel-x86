@@ -1,5 +1,6 @@
 import {ADD_TABLE} from './Add.table';
 import {HashMap} from '../../helper/hashMap';
+import {MOV_TABLE} from './Mov.table';
 
 export interface Operation {
     operation: operation;
@@ -7,16 +8,16 @@ export interface Operation {
     op1?: operandTypes;
     op2?: operandTypes;
     has16Bit?: boolean;
-    isOneByte?: boolean;
+    isRegisterIncluded?: boolean;
     isSignExtended?: boolean;
 }
 
-type operation = 'add';
+type operation = 'add' | 'mov';
 export type modRmTypes = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | 'r';
 type lengthTypes = 'b' | 'w' | 'd';
 
 const getAllTables = (): HashMap<OpCode, Operation> => {
-    const tables = [ADD_TABLE];
+    const tables = [ADD_TABLE, MOV_TABLE];
     return new HashMap<OpCode, Operation>().concat(...tables);
 };
 
