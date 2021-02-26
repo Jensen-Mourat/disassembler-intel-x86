@@ -4,7 +4,7 @@ import {OpCode, Operation} from './index';
 export const ADD_TABLE = new HashMap<OpCode, Operation>()
     .set({opcode: '04'}, {operation: 'add', length: 'b', op1: 'al', op2: 'imm8', isRegisterIncluded: true})
     .set({opcode: '05'}, {operation: 'add', length: 'd', op1: 'eax', op2: 'imm32', isRegisterIncluded: true, has16Bit: true})
-    .set({opcode: '80', modRm: '0'}, {operation: 'add', length: 'd', op1: 'm8', op2: 'imm8'})
+    .set({opcode: '80', modRm: '0'}, {operation: 'add', length: 'b', op1: 'm8', op2: 'imm8'})
     .set({opcode: '81', modRm: '0'}, {operation: 'add', length: 'd', op1: 'm32', op2: 'imm32', has16Bit: true})
     .set({opcode: '83', modRm: '0'}, {operation: 'add', length: 'b', op1: 'm32', op2: 'imm8', isSignExtended: true})
     .set({opcode: '00'}, {operation: 'add', op1: 'm8', op2: 'r8'})

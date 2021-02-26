@@ -6,6 +6,8 @@ import '../utils/string.extensions';
 import {rotate} from './helper/rotate';
 import {removeTrailingZero} from './helper/removeTrailingZero';
 import {removeFalsy} from '../utils/object.extensions';
+import {typeTable} from './constants/tables/Types.table';
+import {register} from 'ts-node';
 
 interface OpCode {
     instruction: string;
@@ -53,11 +55,11 @@ export class _Disassembler {
             }
             const position = currentByte.value.position;
             let instruction = this.getInstruction(currentByte.value.byte, next);
-            instruction = {
+            instruction = removeFalsy({
                 ...instruction,
                 operand1: removeFalsy(instruction.operand1),
                 operand2: removeFalsy(instruction.operand2)
-            };
+            });
             result.push({...instruction, position: position});
         }
     }
@@ -99,9 +101,42 @@ export class _Disassembler {
             }
         } else {
             operation = this.opCodeTable.get({opcode: currentByte});
-            if (!operation?.isRegisterIncluded) {
-                const nextByte = next();
-                tableResult = Table.getReverseValueFromTable(nextByte, isAddress ? '16rm' : '32rm');
+            if (!operation?.op1) {// if instruction does not have any operand
+                if (operation?.const) { //eg int 03
+                    return {instruction: operation.operation, operand1: {value: operation.const}};
+                }
+                return {instruction: operation.operation};
+            }
+            let registerCode = 0;
+            if (!operation) { // op might contain a register code
+                for (let i = 1; i <= 7; i++) {
+                    const substracted = (parseInt(currentByte, 16) - i).toString(16).toUpperCase();
+                    operation = this.opCodeTable.get({opcode: substracted});
+                    if (operation) {
+                        registerCode = i;
+                        break;
+                    }
+                }
+            }
+            if (operation?.type) {
+                const type = is16Bit ? 'rw' : operation.type;
+                const reg = typeTable.get(type)?.get(registerCode)!;
+                switch (type) {
+                    case 'rb':
+                        tableResult = [[], [reg],];
+                        break;
+                    case 'rw':
+                        tableResult = [[], ['', reg]];
+                        break;
+                    case 'rd':
+                        tableResult = [[], ['', '', reg]];
+                        break;
+                }
+            } else {
+                if (!operation?.isRegisterIncluded) {
+                    const nextByte = next();
+                    tableResult = Table.getReverseValueFromTable(nextByte, isAddress ? '16rm' : '32rm');
+                }
             }
         }
         if (!operation) {
@@ -139,6 +174,9 @@ export class _Disassembler {
         [operand1, operand2] = this.checkRegister(op1, op2, options);
         if (operand1 || operand2) {
             if (operand1) { // e.g 04
+                if (!op2) {
+                    return {operand1: {register: operand1}};
+                }
                 if (op2 === 'imm8') {
                     operand2 = next();
                     return {operand1: {register: operand1}, operand2: {value: operand2}};
@@ -150,6 +188,10 @@ export class _Disassembler {
                     }
                     operand2 = removeTrailingZero(rotate(operand2));
                     return {operand1: {register: operand1}, operand2: {value: operand2}};
+                }
+                if (op2.includes('r')) {
+                    operand2 = tableResult[1][options?.is16Bit ? 1 : 2];
+                    return {operand1: {register: operand1}, operand2: {register: operand2}};
                 }
             }
             if (operand2) { // e.g 04
@@ -190,6 +232,9 @@ export class _Disassembler {
                         }
                     }
                 }
+            }
+            if (!op2) {
+                return {operand1: operandObj!};
             }
             if (op2.includes('imm')) {
                 const operand2 = this.processImm(op2, next, options)!;
@@ -243,6 +288,9 @@ export class _Disassembler {
                     }
                 }
             }
+            if (!op2) {
+                return opObj;
+            }
             if (op2 === 'r32') {
                 operand2 = tableResult[1][options?.is16Bit ? 1 : 2];
                 return {
@@ -262,6 +310,9 @@ export class _Disassembler {
             //register and displacement
             if (op1 === 'r8') {
                 operand1 = tableResult[1][0];
+                if (!op2) {
+                    return {operand1: {register: operand1}};
+                }
                 if (op2 === 'm8') {
                     const result = tableResult[0][0];
                     if (options?.isAddress) {
@@ -292,8 +343,15 @@ export class _Disassembler {
             }
             if (op1 === 'r32') {
                 operand1 = tableResult[1][options?.is16Bit ? 1 : 2];
+                if (op2.includes('imm')) {
+                    operand2 = this.processImm(op2, next, options)!;
+                    return {
+                        operand1: {register: operand1},
+                        operand2: operand2,
+                    };
+                }
                 if (op2.includes('m')) {
-                    const result = tableResult[0][0];
+                    const result = tableResult[0].length > 1 ? tableResult[0][options?.is16Bit ? 1 : 2] : tableResult[0][0];
                     if (options?.isAddress) {
                         return this.processAddressMode(operand1, result, next, options.is16Bit ? 'w' : 'd');
                     }
@@ -321,39 +379,22 @@ export class _Disassembler {
 
                         };
                     }
+                    operand2 = this.processM(result, op2, next, options);
+                    return {
+                        operand1: {register: operand1},
+                        operand2
+                    };
                 }
             }
         }
-        if (op1.includes('m')) {
-            if (op2.includes('r')) {
-
-            }
-            if (op2.includes('imm')) {
-
-            }
-        }
-
-        if (op1.includes('r')) {
-
-            if (op2.includes('m')) {
-
-            }
-            if (op2.includes('r')) {
-
-            }
-            if (op2.includes('imm')) {
-
-            }
-        }
-        if (op1.includes('imm')) {
-            if (op2.includes('m')) {
-
-            }
-            if (op2.includes('r')) {
-
-            }
-        }
         return {operand1: {register: operand1}};
+    }
+
+    private processM(op: string, opType: string, next: Function, options?: OptionsInterface): operand {
+        if (op.includes('[')) {
+            return {register: op.removeBrackets(), pointer: opType === 'm32' ? options?.is16Bit ? 'w' : 'd' : 'b'};
+        }
+        return {register: op};
     }
 
     private getPointer(s: string) {
