@@ -39,7 +39,7 @@ export class _Disassembler {
 
     private* byteIterator(s: string): IterableIterator<{ byte: string, position: number }> {
         for (let i = 0; i < s.length; i += 2) {
-            yield {byte: s[i] + s[i + 1], position: i == 0 ? 0 : i / 2};
+            yield {byte: s[i] + s[i + 1], position: i === 0 ? 0 : i / 2};
         }
     }
 
@@ -49,7 +49,7 @@ export class _Disassembler {
         const iterator = this.byteIterator(code);
         const next = () => iterator.next().value.byte;
         while (true) {
-            let currentByte = iterator.next();
+            const currentByte = iterator.next();
             if (currentByte.done) {
                 return result;
             }
@@ -60,7 +60,7 @@ export class _Disassembler {
                 operand1: removeFalsy(instruction.operand1),
                 operand2: removeFalsy(instruction.operand2)
             });
-            result.push({...instruction, position: position});
+            result.push({...instruction, position});
         }
     }
 
@@ -169,7 +169,8 @@ export class _Disassembler {
     }
 
     private processOperand(op1: operandTypes, op2: operandTypes, next: Function, tableResult?: [string[], string[]], options?: OptionsInterface): IOperand {
-        let operand1, operand2;
+        let operand1;
+        let operand2;
         //check register
         [operand1, operand2] = this.checkRegister(op1, op2, options);
         if (operand1 || operand2) {
@@ -257,7 +258,6 @@ export class _Disassembler {
             }
         }
         if (op1 === 'm32') {
-            let isMemory;
             let opObj: IOperand;
             const tableResultForOp1 = tableResult[0][0];
             if (tableResultForOp1.includes('disp')) {
@@ -302,7 +302,7 @@ export class _Disassembler {
                 operand2 = this.processImm(op2, next, options)!;
                 return {
                     operand1: opObj.operand1,
-                    operand2: operand2,
+                    operand2,
                 };
             }
         }
@@ -347,7 +347,7 @@ export class _Disassembler {
                     operand2 = this.processImm(op2, next, options)!;
                     return {
                         operand1: {register: operand1},
-                        operand2: operand2,
+                       operand2,
                     };
                 }
                 if (op2.includes('m')) {
@@ -471,7 +471,7 @@ export class _Disassembler {
 
         if (op === 'disp32') {
             displacement = removeTrailingZero(rotate(next() + next() + next() + next()));
-            return {operand: {displacement: displacement}};
+            return {operand: {displacement}};
         }
         if (op.includes('disp')) {
             if (op.includes('sib')) {
@@ -485,7 +485,7 @@ export class _Disassembler {
                 displacement = removeTrailingZero(rotate(next()));
             }
             if (result) {
-                return {operand: {...result, displacement: displacement}};
+                return {operand: {...result, displacement}};
             }
         }
         const split = op.removeBrackets().split('+');
@@ -494,7 +494,7 @@ export class _Disassembler {
             return {operand: {register, register2, displacement}};
         } else {        // eg [eax + disp32]
             const [register] = split;
-            return {operand: {register, displacement: displacement}};
+            return {operand: {register, displacement}};
         }
     }
 
