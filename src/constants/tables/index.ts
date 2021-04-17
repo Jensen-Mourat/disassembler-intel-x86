@@ -36,12 +36,11 @@ export interface Operation {
   length?: lengthTypes;
   op1?: operandTypes;
   op2?: operandTypes;
-  const?: string;
+  constant?: string;
   type?: 'rb' | 'rd';
   has16Bit?: boolean;
   isRegisterIncluded?: boolean;
   isSignExtended?: boolean;
-  isInterchangeable?: boolean;
 }
 
 type operation =

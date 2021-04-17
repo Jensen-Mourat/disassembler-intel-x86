@@ -13,7 +13,7 @@ class jmpTest {
     }
 
     @test 'jmp test'() {
-        Disassembler.generateInstructions('E9F6FFFFFF').should.equal({
+        Disassembler.generateInstructions('83C00683C00683C0060F85F4FFFFFF').should.equal({
             instruction: 'jmp',
             operand1: {value: '0'},
             position: 0,
