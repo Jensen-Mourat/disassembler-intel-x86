@@ -125,17 +125,13 @@ export class _Disassembler {
       let registerCode = 0;
       if (!operation) {
         // op might contain a register code
-        for (let i = 1; i <= 7; i++) {
-          const substracted = (parseInt(currentByte, 16) - i).toString(16).toUpperCase();
-          operation = this.opCodeTable.get({ opcode: substracted });
-          if (operation) {
-            registerCode = i;
-            break;
-          }
-        }
+        const intValue = parseInt(currentByte, 16);
+        const opcode = (intValue &~ 7).toString(16).toUpperCase();
+        registerCode = intValue & 7;
+        operation = this.opCodeTable.get({ opcode });
       }
       if (!operation) {
-        // check for 2 bytes
+        // check for 2 bytes opcodes
         operation = this.opCodeTable.get({ opcode: currentByte + next() });
         if (this.operationIsJump(operation?.operation)) {
           return this.processJump(operation, next);
