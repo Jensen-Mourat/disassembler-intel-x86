@@ -1,11 +1,11 @@
 # disassembler-intel-x86
-A js dissassembler for x86 intel opCodes
+A js dissassembler for x86 intel opCodes. Supports only limited amount of instructions currently, feel free to contribute!
 
 # Usage
 Import the `Disassembler` class and call 
 
-``` new Disassembler().generateInstructions(code: string) \\ returns Instruction[]
-
+``` 
+new Disassembler().generateInstructions(code: string) \\ returns Instruction[]
 
 interface operand {
   value?: string;
