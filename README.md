@@ -16,7 +16,7 @@ interface operand {
   pointer?: pointerType;
 }
 
-export interface Instruction {
+interface Instruction {
   instruction: string;
   operand1?: operand;
   operand2?: operand;
