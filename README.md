@@ -6,8 +6,12 @@ Import the `Disassembler` class and call
 
 ``` 
 new Disassembler().generateInstructions(code: string) \\ returns Instruction[]
+```
 
-interface operand {
+#Interface
+
+
+```interface operand {
   value?: string;
   register?: string;
   register2?: string;
